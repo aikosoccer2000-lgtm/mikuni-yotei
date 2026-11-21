@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#1f3a5f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="三国 予定表">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="apple-touch-icon.png">
+<title>三国 予定表</title>
+<style>
+  :root {
+    --bg:#f4f6f9; --card:#fff; --ink:#1b2430; --sub:#5b6675; --line:#d5dbe3; --head:#1f3a5f; --today:#e8f1ff;
+    --sun:#c92a2a; --sat:#1c64c8; --off:#f6eaea;
+    --c0:#e03131; --c0bg:#fff0f0; --c0ink:#c92a2a; --c1:#1f6feb; --c1bg:#e3eeff; --c1ink:#1f6feb; --c2:#2b8a3e; --c2bg:#e6f5ea; --c2ink:#2b8a3e; --c3:#f5c400; --c3bg:#fff7cc; --c3ink:#8a6d00;
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.4 "Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif; -webkit-text-size-adjust:100%; }
+  header { position:sticky; top:0; z-index:5; background:var(--head); color:#fff; padding:8px 12px calc(8px) 12px; padding-top:max(8px, env(safe-area-inset-top)); }
+  .bar { display:flex; align-items:center; gap:8px; max-width:1400px; margin:0 auto; }
+  .bar h1 { font-size:22px; margin:0; flex:1; text-align:center; letter-spacing:1px; }
+  .bar button { background:rgba(255,255,255,.15); color:#fff; border:0; border-radius:8px; font:inherit; font-size:16px; min-width:44px; min-height:40px; padding:0 12px; cursor:pointer; }
+  .bar button.t { font-size:13px; }
+  .legend { display:flex; flex-wrap:wrap; gap:6px 14px; justify-content:center; max-width:1400px; margin:6px auto 0; font-size:13px; }
+  .legend label { display:flex; align-items:center; gap:5px; cursor:pointer; user-select:none; }
+  .legend input { width:18px; height:18px; margin:0; }
+  .sw { display:inline-block; width:14px; height:14px; border-radius:3px; }
+  main { max-width:1400px; margin:0 auto; padding:8px 8px 40px; }
+  .grid { display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); background:var(--line); gap:1px; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .dow { background:#2c4a70; color:#fff; text-align:center; font-weight:bold; padding:4px 0; font-size:13px; }
+  .dow.s0 { background:#a33; } .dow.s6 { background:#2d5fa8; }
+  .day { background:var(--card); min-height:120px; padding:3px 3px 4px; cursor:pointer; position:relative; }
+  .day.out { background:#eceff3; } .day.out .num { color:#a0a8b3; }
+  .day.off { background:var(--off); }
+  .day.sel { box-shadow:inset 0 0 0 3px var(--head); }
+  /* 今日は赤の太枠（2026-11-14 タダシさん）。選択中でも赤を優先 */
+  .day.today, .day.today.sel { background:#fff; box-shadow:inset 0 0 0 4px #d00000; }
+  .day.today .num { color:#d00000; }
+  .num { font-weight:bold; font-size:15px; margin:0 0 2px 2px; }
+  .num.s0, .num.hol { color:var(--sun); } .num.s6 { color:var(--sat); }
+  .ev { border-left:4px solid; border-radius:4px; padding:2px 4px; margin-top:3px; font-size:12px; line-height:1.3; overflow:hidden; }
+  .ev .pl { font-weight:bold; }
+  .ev .co { font-weight:normal; font-size:10px; color:var(--sub); }
+  .ev .sp { color:var(--ink); font-size:12.5px; font-weight:bold; letter-spacing:.2px; }
+  /* 残土・PP・散水車・通行許可などは色付きの札で目立たせる（2026-11-14 タダシさん） */
+  .ev .tgs { margin-top:2px; }
+  .ev .tg { display:inline-block; font-size:11px; font-weight:bold; color:#fff; background:#e03131 !important; border-radius:4px; padding:1px 5px; margin:1px 3px 0 0; line-height:1.35; }
+  .tg.k-zando { background:#8b5a2b; } .tg.k-pp { background:#7048e8; } .tg.k-sansui { background:#0c8599; } .tg.k-tsuko { background:#e03131; }
+  .tg.k-sengyo { background:#5c940d; } .tg.k-crane { background:#d9480f; } .tg.k-guard { background:#c2255c; }
+  .ev .pdf { float:right; font-size:11px; font-weight:bold; color:#b00; }
+  .t0 { border-color:var(--c0); background:var(--c0bg); }
+  .ev.man { border-style:dashed; border-width:2px 2px 2px 4px; }
+  .ev .mk { font-size:10px; margin-right:2px; }
+  .ev .memo { color:#c00; font-weight:bold; font-size:12px; }
+  #detail .ev .memo { font-size:15px; margin-top:4px; }
+  .t1 { border-color:var(--c1); background:var(--c1bg); } .t2 { border-color:var(--c2); background:var(--c2bg); } .t3 { border-color:var(--c3); background:var(--c3bg); }
+  .hide0 .t0, .hide1 .t1, .hide2 .t2, .hide3 .t3 { display:none; }
+  #detail { margin-top:10px; background:var(--card); border-radius:10px; padding:10px 12px; border:1px solid var(--line); }
+  #detail h2 { font-size:17px; margin:0 0 8px; }
+  #detail .ev { font-size:15px; padding:8px 10px; margin-top:8px; }
+  #detail .ev .sp { font-size:17px; margin-top:2px; }
+  #detail .ev .co { font-size:13px; }
+  #detail .ev .tm { font-weight:bold; }
+  #detail .ev .tg { font-size:14px; padding:2px 8px; margin-top:4px; }
+  a.lnk { display:inline-block; margin-left:4px; padding:1px 6px; border:1px solid #1f6feb; border-radius:4px; color:#1f6feb; background:#fff; text-decoration:none; font-size:12px; white-space:nowrap; }
+  #detail a.doc { display:block; margin-top:6px; padding:9px 10px; background:#fff; border:1px solid #c33; color:#b00; border-radius:6px; text-decoration:none; font-weight:bold; font-size:14px; }
+  #detail .none { color:var(--sub); }
+  .foot { color:var(--sub); font-size:12px; text-align:center; margin-top:12px; }
+  .err { background:#fde2e2; color:#a00; padding:8px 12px; border-radius:8px; margin:8px 0; display:none; }
+  /* 携帯：マスは色の帯と場所だけ。タップで下に詳しく */
+  @media (max-width:760px) {
+    .bar h1 { font-size:19px; }
+    main { padding:6px 4px 40px; }
+    .day { min-height:72px; padding:2px 1px 3px; }
+    .num { font-size:13px; margin-left:3px; }
+    .grid .ev { border-left-width:3px; padding:1px 2px; margin-top:2px; font-size:10px; white-space:nowrap; text-overflow:ellipsis; }
+    .grid .ev .co, .grid .ev .sp, .grid .ev .pdf, .grid .ev .memo { display:none; }
+    .grid .ev .tgs { white-space:normal; margin-top:1px; line-height:1; }
+    .grid .ev .tg { font-size:9px; padding:1px 2px; margin:1px 1px 0 0; border-radius:2px; }
+  }
+  @media (min-width:761px) { #detail { display:none; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <button id="prev" aria-label="前の月">◀</button>
+    <h1 id="ttl">予定表</h1>
+    <button id="next" aria-label="次の月">▶</button>
+    <button id="tod" class="t">今月</button>
+  </div>
+  <div class="legend" id="legend"></div>
+</header>
+<main>
+  <div class="err" id="err"></div>
+  <div class="grid" id="grid"></div>
+  <div id="detail"></div>
+  <div class="foot" id="foot"></div>
+</main>
+<script>
+const TEAMS = { '渡邉班': 1, '花橋班': 2, '神庭班': 3, '共通': 0 };
+const DOW = ['日', '月', '火', '水', '木', '金', '土'];
+let data = null, cur = null, selDate = null;
+const hidden = new Set();
+try { JSON.parse(localStorage.getItem('yotei-hide') || '[]').forEach(t => hidden.add(t)); } catch (e) {}
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+// 手入力の内容・メモに書いたURLは「🗺地図」リンクにする（2026-11-16 忘年会会場）
+const lk = s => esc(s).replace(/https?:\/\/[^\s<"]+/g, u => `<a class="lnk" href="${u}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🗺地図</a>`);
+const today = new Date(); today.setHours(0, 0, 0, 0);
+
+function legend() {
+  const el = document.getElementById('legend');
+  el.innerHTML = Object.entries(TEAMS).map(([t, n]) =>
+    `<label><input type="checkbox" data-t="${n}" ${hidden.has(n) ? '' : 'checked'}><span class="sw" style="background:var(--c${n})"></span>${t}</label>`).join('');
+  el.querySelectorAll('input').forEach(i => i.addEventListener('change', () => {
+    const n = +i.dataset.t; i.checked ? hidden.delete(n) : hidden.add(n);
+    try { localStorage.setItem('yotei-hide', JSON.stringify([...hidden])); } catch (e) {}
+    applyHide();
+  }));
+  applyHide();
+}
+function applyHide() { const m = document.querySelector('main'); [0, 1, 2, 3].forEach(n => m.classList.toggle('hide' + n, hidden.has(n))); }
+
+function evHtml(e, full) {
+  const n = TEAMS[e.team] ?? 0;
+  const man = e.manual ? ' man' : '', mk = '';   // ✏・📍などの頭のマークは出さない（2026-11-16 タダシさん）
+  const memo = (e.memo || []).map(m => `<div class="memo">📝 ${lk(m)}</div>`).join('');
+  const mm = (e.memo && e.memo.length) ? '📝' : '';
+  const K = { '残土': 'zando', 'PP': 'pp', '散水車': 'sansui', '通行許可': 'tsuko', '先行ｵｰｶﾞ': 'sengyo', 'クレーン': 'crane', 'ガードマン': 'guard' };
+  const tags = (e.tags && e.tags.length) ? '<div class="tgs">' + e.tags.map(t => `<span class="tg k-${K[t] || 'etc'}">${esc(t)}</span>`).join('') + '</div>' : '';
+  if (!full) {
+    return `<div class="ev t${n}${man}">${e.shiji && e.shiji.length ? '<span class="pdf">PDF</span>' : ''}${e.place || n !== 0 ? `${mk}<span class="pl">${esc(e.place) || esc(e.team)}</span>${mm}` : ''}${e.company ? `<div class="co">${esc(e.company)}</div>` : ''}<div class="sp">${e.place || n !== 0 ? '' : mk + mm}${lk(e.spec)}</div>${memo}${tags}</div>`;
+  }
+  const docs = (e.shiji || []).map(p => `<a class="doc" href="${encodeURI(p)}" target="_blank" rel="noopener">📄 ${esc(p.replace(/^shiji\//, '').replace(/\.pdf$/, ''))}</a>`).join('');
+  return `<div class="ev t${n}${man}">${n === 0 ? '' :`<div class="tm" style="color:var(--c${n}ink)">${mk}${esc(e.team)}${e.manual ? '（手入力）' : ''}</div>`}${e.place || e.company ? `<div><b>${esc(e.place)}</b>　<span class="co">${esc(e.company)}</span></div>` : ''}<div class="sp">${n === 0 ? mk : ''}${lk(e.spec) || (e.manual ? '' : '（仕様なし）')}</div>${memo}${tags}${docs}</div>`;
+}
+
+function render() {
+  const y = cur.getFullYear(), m = cur.getMonth();
+  document.getElementById('ttl').textContent = `${y}年${m + 1}月`;
+  const first = new Date(y, m, 1), start = new Date(first); start.setDate(1 - first.getDay());
+  const last = new Date(y, m + 1, 0), end = new Date(last); end.setDate(last.getDate() + (6 - last.getDay()));
+  const byDay = {};
+  for (const e of data.events) (byDay[e.date] = byDay[e.date] || []).push(e);
+  const order = e => TEAMS[e.team] ?? 0;
+  let h = DOW.map((d, i) => `<div class="dow s${i}">${d}</div>`).join('');
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const k = ymd(d), w = d.getDay(), hol = data.holidays.includes(k);
+    const cls = ['day', d.getMonth() !== m ? 'out' : '', (w === 0 || hol) && d.getMonth() === m ? 'off' : '', +d === +today ? 'today' : '', k === selDate ? 'sel' : ''].join(' ');
+    const evs = (byDay[k] || []).slice().sort((a, b) => order(a) - order(b));
+    h += `<div class="${cls}" data-d="${k}"><div class="num s${w} ${hol ? 'hol' : ''}">${d.getDate()}</div>${evs.map(e => evHtml(e, false)).join('')}</div>`;
+  }
+  const g = document.getElementById('grid'); g.innerHTML = h;
+  g.querySelectorAll('.day').forEach(c => c.addEventListener('click', () => select(c.dataset.d, true)));
+  if (selDate && selDate.slice(0, 7) === `${y}-${pad(m + 1)}`) detail(selDate); else detail(null);
+}
+
+function select(k, scroll) {
+  selDate = k;
+  document.querySelectorAll('.day.sel').forEach(c => c.classList.remove('sel'));
+  const c = document.querySelector(`.day[data-d="${k}"]`); if (c) c.classList.add('sel');
+  detail(k);
+  if (scroll && window.matchMedia('(max-width:760px)').matches) document.getElementById('detail').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // 広い画面では指示書をそのまま開けるように
+  if (!window.matchMedia('(max-width:760px)').matches) openWide(k);
+}
+function detail(k) {
+  const el = document.getElementById('detail');
+  if (!k) { el.innerHTML = '<div class="none">日付をタップすると、その日の予定と指示書が出ます。</div>'; return; }
+  const d = new Date(k + 'T00:00:00');
+  const evs = data.events.filter(e => e.date === k && !hidden.has(TEAMS[e.team])).sort((a, b) => (TEAMS[a.team] ?? 0) - (TEAMS[b.team] ?? 0));
+  el.innerHTML = `<h2>${d.getMonth() + 1}月${d.getDate()}日（${DOW[d.getDay()]}）</h2>` + (evs.length ? evs.map(e => evHtml(e, true)).join('') : '<div class="none">予定はありません</div>');
+}
+function openWide(k) {
+  const evs = data.events.filter(e => e.date === k && e.shiji && e.shiji.length);
+  const old = document.getElementById('wide');
+  if (!evs.length) { if (old) old.remove(); return; }
+  const files = [...new Set(evs.flatMap(e => e.shiji))];
+  const box = document.getElementById('wide') || Object.assign(document.createElement('div'), { id: 'wide' });
+  box.style.cssText = 'margin-top:10px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px';
+  box.innerHTML = '<b>指示書</b>' + files.map(p => `<a class="doc" style="display:block;margin-top:6px;color:#b00" href="${encodeURI(p)}" target="_blank" rel="noopener">📄 ${esc(p.replace(/^shiji\//, '').replace(/\.pdf$/, ''))}</a>`).join('');
+  document.querySelector('main').insertBefore(box, document.getElementById('foot'));
+}
+
+async function load() {
+  try {
+    const r = await fetch('data.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status);
+    data = await r.json();
+    document.getElementById('foot').textContent = `工程表アプリ ${data.source} の内容　／　更新 ${data.updated}`;
+    document.getElementById('err').style.display = 'none';
+    if (!cur) { cur = new Date(today.getFullYear(), today.getMonth(), 1); selDate = ymd(today); }
+    render();
+  } catch (e) {
+    const el = document.getElementById('err'); el.textContent = '予定を読み込めませんでした。電波の良い所でもう一度開いてください。'; el.style.display = 'block';
+  }
+}
+document.getElementById('prev').onclick = () => { cur = new Date(cur.getFullYear(), cur.getMonth() - 1, 1); render(); };
+document.getElementById('next').onclick = () => { cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1); render(); };
+document.getElementById('tod').onclick = () => { cur = new Date(today.getFullYear(), today.getMonth(), 1); selDate = ymd(today); render(); };
+document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
+legend(); load();
+</script>
+</body>
+</html>
